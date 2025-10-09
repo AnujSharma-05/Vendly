@@ -45,6 +45,7 @@ class AuctionConfig(BaseModel):
     max_participants: int
     entry_mode: enums.AuctionEntryMode
     participant_spending_limit: float
+    allow_anonymous_spectators: bool = False
 
 class AuctionCreate(BaseModel):
     title: str = Field(..., max_length=100)
