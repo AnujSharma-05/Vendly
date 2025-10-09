@@ -16,9 +16,11 @@ Use a non-bcrypt backend to avoid platform-specific bcrypt issues and the 72-byt
 `pbkdf2_sha256` is widely supported and implemented in passlib without requiring the `bcrypt` C-extension.
 If you prefer Argon2, install `argon2-cffi` and switch to the `argon2` scheme.
 """
+# Use pbkdf2_sha256 which is pure-python and avoids C-extension issues.
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def get_password_hash(password: str) -> str:
+    """Hashes the password using the configured context."""
     return pwd_context.hash(password)
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
