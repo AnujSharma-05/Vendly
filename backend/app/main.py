@@ -16,6 +16,6 @@ async def read_root():
     Simple root endpoint to check if api is running or not
     """
     return{
-        "message" "Welcome to Vendly API!"
+        "message": "Welcome to Vendly API!"
     }
 

@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
-from .core import enums # Import our new enums
+from .core import enums 
+from typing import Optional
 
 # ==================================
 #         User & Auth
@@ -16,7 +17,7 @@ class UserCreate(UserBase):
     role: enums.UserRole = enums.UserRole.PARTICIPANT #participant by default
 
 class UserOut(UserBase):
-    id: int # this would be a UUID or ObjectId string after connection to DB
+    id: str # this will be an ObjectId string after saving to MongoDB
     role: enums.UserRole
     created_at: datetime
     is_active: bool
@@ -31,7 +32,7 @@ class UserOut(UserBase):
 #         Client Profile
 
 class ClientProfileOut(BaseModel):
-    user_id: int
+    user_id: str
     company_name: Optional[str]
     status: enums.ClientProfileStatus
     
@@ -74,5 +75,18 @@ class AuctionItemOut(AuctionItemCreate):
 
     class Config:
         from_attributes = True
+
+# ==================================
+# ==================================
+#         Token Schemas
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+
 
 # ==================================
