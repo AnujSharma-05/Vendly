@@ -126,6 +126,10 @@ OAuth2PasswordRequestForm = Depends()):
     access_token = create_access_token(data ={ "sub": user["email"]} #"sub is the standard JWT claim for "subject"
     )
 
-    # 4. Return the token
-    return {"access_token": access_token, "token_type": "bearer"}
+    # 4. Manually construct the response dictionary
+    token_response = {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
+    return schemas.Token(**token_response)
