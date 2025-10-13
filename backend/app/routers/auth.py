@@ -4,10 +4,12 @@ from ..db.mongodb import UserCollection, ClientProfileCollection # Import real c
 from ..core.enums import UserRole, ClientProfileStatus
 from passlib.context import CryptContext
 
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from ..core.config import settings
+from typing import Annotated
+
 
 router = APIRouter(
     prefix="/auth",
@@ -39,10 +41,49 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
+    """
+    A dependency function that decodes the JWT token from the request,
+    validates it, and fetches the corresponding user from the database.
+    
+    Any endpoint that uses this as a dependency will be protected.
+    """
+    # This is the standard exception to raise if the token is invalid.
 
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub") # "sub" is the subject, which is our user's email
 
+        if email is None:
+            raise credentials_exception
+    except JWTError: #this is to have any errors caught from jwt.decode like expired token or an expired token
+        raise credentials_exception
+    
+    user = await UserCollection.find_one({"email": email})
+    if user is None:
+        #this is to handle if the user doesn't handle
+        raise credentials_exception
+    # return the full user doc in pydantic way so that we can map it out for consistency
+
+    response_user = schemas.UserOut(
+        id=str(user["_id"]),
+        username=user["username"],
+        email=user["email"],
+        role=user["role"],
+        created_at=user["created_at"],
+        is_active=user["is_active"]
+    )
+    return response_user
+        
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 async def register_user(user_data: schemas.UserCreate):
@@ -126,10 +167,6 @@ OAuth2PasswordRequestForm = Depends()):
     access_token = create_access_token(data ={ "sub": user["email"]} #"sub is the standard JWT claim for "subject"
     )
 
-    # 4. Manually construct the response dictionary
-    token_response = {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    # 4. Return the token
+    return {"access_token": access_token, "token_type": "bearer"}
 
-    return schemas.Token(**token_response)
