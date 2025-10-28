@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated
+from bson import ObjectId
 
 from .. import schemas
 from .auth import get_current_client_user
@@ -22,7 +23,7 @@ async def create_auction(
     #according to the flow, to create a new room the client identity needs to be approved, this is that step
 
     client_profile = await ClientProfileCollection.find_one(
-        {"user_id": ObjectId(current_client.id)}
+        {"user_id": ObjectId(current_user.id)}
         )
 
         

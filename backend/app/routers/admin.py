@@ -3,9 +3,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from  typing import List, Annotated
 from bson import ObjectId
+from pymongo import ReturnDocument
 from .. import schemas
 from .auth import get_current_admin_user
 from ..db.mongodb import ClientProfileCollection, UserCollection
+from ..core.enums import ClientProfileStatus
 
 router = APIRouter(
     prefix="/admin",
@@ -18,13 +20,15 @@ async def get_pending_clients():
     #goal is that admin can approve a client, change thier profile status to "approved" but the admin access is required
 
     pending_profiles_cursor = ClientProfileCollection.find(
-        {"status": ClientProfileCollection.PENDING_APPROVAL}
+        {"status": ClientProfileStatus.PENDING_APPROVAL}
     )
 
     # converting the cursor in list of dict
     pending_profiles = await pending_profiles_cursor.to_list(length=100) #can change the limit afterwards too
     
-    
+    # Convert ObjectId to string for each profile
+    for profile in pending_profiles:
+        profile["user_id"] = str(profile["user_id"])
     
     return [schemas.ClientProfileOut(**profile) for profile in pending_profiles]
 
@@ -40,11 +44,14 @@ async def approve_client(user_id: str):
         )
     updated_profile = await ClientProfileCollection.find_one_and_update(
         {"user_id": object_user_id},
-        {"$set": {"status": ClientProfileCollection.APPROVED}},
-        return_document= True #getting document after update
+        {"$set": {"status": ClientProfileStatus.APPROVED}},
+        return_document=ReturnDocument.AFTER #getting document after update
         )
     
     if updated_profile is None:
         raise HTTPException(status_code=404, detail=f"client profile for ID {user_id} not found")
+    
+    # Convert ObjectId to string
+    updated_profile["user_id"] = str(updated_profile["user_id"])
     
     return schemas.ClientProfileOut(**updated_profile)
