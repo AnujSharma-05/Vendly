@@ -170,3 +170,21 @@ OAuth2PasswordRequestForm = Depends()):
     # 4. Return the token
     return {"access_token": access_token, "token_type": "bearer"}
 
+
+# The below are the admin only protected routes
+async def get_current_admin_user(current_user: Annotated[schemas.UserOut, Depends(get_current_user)]):
+    if current_user.role!= UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User has no privilege to access this resource."
+        )
+    return current_user
+
+async def get_current_client_user(current_user: Annotated[schemas.UserOut, Depends(get_current_user)]):
+    if current_user.role!= UserRole.CLIENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User has no privilege to access this resource."
+        )
+    return current_user
+
