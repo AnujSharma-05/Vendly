@@ -31,13 +31,25 @@ class UserOut(UserBase):
 # ==================================
 #         Client Profile
 
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+    @classmethod
+    def validate(cls, v):
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid ObjectID")
+        return ObjectId(v)
+
+
 class ClientProfileOut(BaseModel):
-    user_id: str
+    user_id: PyObjectId
     company_name: Optional[str]
     status: enums.ClientProfileStatus
     
     class Config:
         from_attributes = True
+        json_encoders = {ObjectId: str} #this is for pydantic to correctly convert the ObjectId to a string for JSON responses
 
 # ==================================
 # ==================================
