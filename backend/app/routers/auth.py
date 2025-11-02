@@ -73,17 +73,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         #this is to handle if the user doesn't handle
         raise credentials_exception
     # return the full user doc in pydantic way so that we can map it out for consistency
-
-    response_user = schemas.UserOut(
-        id=str(user["_id"]),
-        username=user["username"],
-        email=user["email"],
-        role=user["role"],
-        created_at=user["created_at"],
-        is_active=user["is_active"]
-    )
-    return response_user
-        
+    return schemas.UserOut(**user)
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 async def register_user(user_data: schemas.UserCreate):
