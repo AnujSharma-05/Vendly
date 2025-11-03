@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, Gavel } from "lucide-react";
 import Button from "../ui/Button";
+import { useAuth } from "../../context/AuthContext";
 
 /**
  * Navbar Component - Minimalist, responsive navigation
@@ -9,18 +10,22 @@ import Button from "../ui/Button";
  * Features:
  * - Sticky on scroll
  * - Mobile hamburger menu
- * - Authentication state aware (placeholder for now)
+ * - Authentication state aware
  * - Clean, minimal design
  */
 const Navbar = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // TODO: Replace with actual auth state from AuthContext
-  const isAuthenticated = false;
-  const userRole = null; // 'admin', 'client', 'participant'
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -60,12 +65,18 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  to="/dashboard"
+                  to={
+                    user?.role === "admin"
+                      ? "/admin/dashboard"
+                      : user?.role === "client"
+                      ? "/client/dashboard"
+                      : "/dashboard"
+                  }
                   className="text-gray-700 hover:text-primary-600 transition-colors font-medium"
                 >
                   Dashboard
                 </Link>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
                   Logout
                 </Button>
               </>
@@ -128,7 +139,16 @@ const Navbar = () => {
             <div className="pt-3 border-t border-gray-200 space-y-2">
               {isAuthenticated ? (
                 <>
-                  <Link to="/dashboard" className="block">
+                  <Link
+                    to={
+                      user?.role === "admin"
+                        ? "/admin/dashboard"
+                        : user?.role === "client"
+                        ? "/client/dashboard"
+                        : "/dashboard"
+                    }
+                    className="block"
+                  >
                     <Button
                       variant="ghost"
                       size="sm"
@@ -141,6 +161,7 @@ const Navbar = () => {
                     variant="ghost"
                     size="sm"
                     className="w-full justify-start"
+                    onClick={handleLogout}
                   >
                     Logout
                   </Button>

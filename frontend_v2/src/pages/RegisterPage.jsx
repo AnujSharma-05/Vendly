@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Gavel, Info } from "lucide-react";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * Register Page - User registration form
@@ -19,6 +20,9 @@ import Input from "../components/ui/Input";
  * - Responsive design
  */
 const RegisterPage = () => {
+  const navigate = useNavigate();
+  const { register } = useAuth();
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -86,16 +90,30 @@ const RegisterPage = () => {
 
     setIsLoading(true);
 
-    // TODO: Replace with actual API call
-    setTimeout(() => {
-      console.log("Registration attempt:", {
+    try {
+      const result = await register({
         username: formData.username,
         email: formData.email,
+        password: formData.password,
         role: formData.role,
       });
+
+      if (result.success && result.loginResult?.success) {
+        // Redirect based on user role after successful registration and auto-login
+        const roleRedirects = {
+          admin: "/admin/dashboard",
+          client: "/client/dashboard",
+          participant: "/dashboard",
+        };
+        navigate(roleRedirects[result.loginResult.user.role] || "/");
+      } else {
+        setErrors({ general: result.error || "Registration failed" });
+      }
+    } catch (err) {
+      setErrors({ general: "An unexpected error occurred. Please try again." });
+    } finally {
       setIsLoading(false);
-      // Simulate success - redirect to login or dashboard
-    }, 2000);
+    }
   };
 
   return (
@@ -132,6 +150,13 @@ const RegisterPage = () => {
             </h1>
             <p className="text-gray-600">Fill in your details to get started</p>
           </div>
+
+          {/* Error Message */}
+          {errors.general && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{errors.general}</p>
+            </div>
+          )}
 
           {/* Registration Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

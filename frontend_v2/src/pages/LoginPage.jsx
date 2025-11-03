@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Gavel } from "lucide-react";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * Login Page - Clean authentication form
@@ -17,6 +18,9 @@ import Input from "../components/ui/Input";
  * - Responsive design
  */
 const LoginPage = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [formData, setFormData] = useState({
     usernameOrEmail: "",
     password: "",
@@ -39,13 +43,29 @@ const LoginPage = () => {
     setError("");
     setIsLoading(true);
 
-    // TODO: Replace with actual API call
-    setTimeout(() => {
-      console.log("Login attempt:", formData);
+    try {
+      const result = await login(
+        formData.usernameOrEmail,
+        formData.password,
+        formData.rememberMe
+      );
+
+      if (result.success) {
+        // Redirect based on user role
+        const roleRedirects = {
+          admin: "/admin/dashboard",
+          client: "/client/dashboard",
+          participant: "/dashboard",
+        };
+        navigate(roleRedirects[result.user.role] || "/");
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
-      // Simulate error for demo
-      // setError('Invalid username or password');
-    }, 1500);
+    }
   };
 
   return (
