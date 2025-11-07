@@ -23,7 +23,10 @@ export const AuthProvider = ({ children }) => {
   // Check if user is already logged in on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem("access_token");
+      // Check both localStorage and sessionStorage for token
+      const token =
+        localStorage.getItem("access_token") ||
+        sessionStorage.getItem("access_token");
       const savedUser = localStorage.getItem("user");
 
       if (token && savedUser) {
@@ -36,6 +39,7 @@ export const AuthProvider = ({ children }) => {
           // Token invalid or expired
           console.error("Token validation failed:", error);
           localStorage.removeItem("access_token");
+          sessionStorage.removeItem("access_token");
           localStorage.removeItem("user");
           setUser(null);
           setIsAuthenticated(false);

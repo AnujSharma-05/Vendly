@@ -82,6 +82,11 @@ class ClientProfileOut(MongoBaseModel):
     company_name: Optional[str] = None
     status: enums.ClientProfileStatus
 
+class ClientProfileWithUserOut(ClientProfileOut):
+    """Schema for Client Profile with User information (for admin views)."""
+    username: Optional[str] = None
+    email: Optional[str] = None
+
 
 # ====================================================================
 #                  AUCTION & RELATED ITEM SCHEMAS
