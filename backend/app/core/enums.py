@@ -24,6 +24,13 @@ class AuctionRosterRole(str, Enum):
     PARTICIPANT = "participant"
     SPECTATOR = "spectator"
 
+class ItemStatus(str, Enum):
+    PENDING = "pending"      # Not yet auctioned
+    ACTIVE = "active"        # Currently being bid on
+    SOLD = "sold"            # Auction ended, has winner
+    UNSOLD = "unsold"        # Auction ended, no bids met reserve
+    CANCELLED = "cancelled"  # Item removed from auction
+
 class TransactionStatus(str, Enum):
     PENDING = "pending"
     PROCESSING = "processing"

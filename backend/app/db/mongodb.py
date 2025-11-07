@@ -12,4 +12,5 @@ database = client.vendly
 UserCollection = database.get_collection("users")
 ClientProfileCollection = database.get_collection("client_profiles")
 AuctionCollection = database.get_collection("auctions")
+AuctionItemCollection = database.get_collection("auction_items")
 # ... we will add more as we need them

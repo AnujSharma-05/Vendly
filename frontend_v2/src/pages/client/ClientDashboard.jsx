@@ -238,7 +238,7 @@ const ClientDashboard = () => {
                   <div className="space-y-4">
                     {auctions.map((auction) => (
                       <div
-                        key={auction.id}
+                        key={auction._id}
                         className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-start justify-between">
@@ -275,9 +275,33 @@ const ClientDashboard = () => {
                               </span>
                             </div>
                           </div>
-                          <Button variant="secondary" size="sm">
-                            Manage
-                          </Button>
+                          <div className="flex gap-2">
+                            {auction.status === "scheduled" && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() =>
+                                  navigate(
+                                    `/client/auctions/${auction._id}/items/add`
+                                  )
+                                }
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Add Items
+                              </Button>
+                            )}
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() =>
+                                navigate(
+                                  `/client/auctions/${auction._id}/manage`
+                                )
+                              }
+                            >
+                              Manage
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}

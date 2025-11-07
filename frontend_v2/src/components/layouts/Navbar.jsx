@@ -88,7 +88,7 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button variant="primary" size="sm">
+                  <Button variant="secondary" size="sm">
                     Get Started
                   </Button>
                 </Link>

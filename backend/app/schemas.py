@@ -44,6 +44,7 @@ class MongoBaseModel(BaseModel):
         # Allows Pydantic to work with non-standard types like ObjectId during model creation,
         # before our custom `PyObjectId` validator converts it.
         arbitrary_types_allowed=True,
+        by_alias=True,  # Use alias names (like `_id`) in serialized output
     )
 
 
@@ -112,17 +113,48 @@ class AuctionOut(MongoBaseModel, AuctionCreate):
     host_id: PyObjectId # The ID of the Client user hosting the auction.
     status: enums.AuctionStatus
 
+class AuctionUpdate(BaseModel):
+    """Schema for updating an auction. All fields are optional."""
+    title: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    config: Optional[AuctionConfig] = None
 
-class AuctionItemCreate(BaseModel):
-    """Schema used ONLY for creating a new auction item."""
-    name: str
-    description: str
-    base_price: float = Field(..., gt=0)  # Price must be greater than zero.
-    images: List[str] = []  # A list of image URLs.
 
-class AuctionItemOut(MongoBaseModel, AuctionItemCreate):
+# ====================================================================
+#                  AUCTION ITEM SCHEMAS
+# ====================================================================
+
+class AuctionItemBase(BaseModel):
+    """Base schema for auction items with common fields."""
+    name: str = Field(..., min_length=1, max_length=200, description="Item name")
+    description: Optional[str] = Field(None, max_length=2000, description="Item description")
+    base_price: float = Field(..., gt=0, description="Starting bid amount (must be > 0)")
+    category: Optional[str] = Field(None, max_length=100, description="Item category")
+    image_urls: List[str] = Field(default_factory=list, max_items=5, description="List of image URLs (max 5)")
+
+class AuctionItemCreate(AuctionItemBase):
+    """Schema for creating a new auction item (without auction_id in body - taken from URL)."""
+    pass  # Auction ID will come from the URL path parameter
+
+class AuctionItemUpdate(BaseModel):
+    """Schema for updating an auction item (all fields optional)."""
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
+    base_price: Optional[float] = Field(None, gt=0)
+    category: Optional[str] = Field(None, max_length=100)
+    image_urls: Optional[List[str]] = Field(None, max_items=5)
+
+class AuctionItemOut(MongoBaseModel, AuctionItemBase):
     """Schema for representing an auction item in API responses."""
-    auction_id: PyObjectId # The ID of the auction this item belongs to.
+    auction_id: PyObjectId  # The ID of the auction this item belongs to
+    created_at: datetime
+    # Bidding-related fields (for future phases)
+    current_bid: Optional[float] = None
+    bid_count: int = 0
+    winner_id: Optional[PyObjectId] = None
+    status: enums.ItemStatus = enums.ItemStatus.PENDING
 
 
 # ====================================================================

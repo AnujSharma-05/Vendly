@@ -100,3 +100,121 @@ async def create_auction(
     created_auction = await AuctionCollection.find_one({"_id": result.inserted_id})
     
     return schemas.AuctionOut(**created_auction)
+
+@router.get("/auctions/{auction_id}", response_model=schemas.AuctionOut)
+async def get_auction(
+    auction_id: str,
+    current_user: Annotated[schemas.UserOut, Depends(get_current_client_user)]
+):
+    """
+    Get a single auction by ID. Only the auction host can view it.
+    """
+    # Validate ObjectId format
+    if not ObjectId.is_valid(auction_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid auction ID format"
+        )
+    
+    # Find auction
+    auction = await AuctionCollection.find_one({"_id": ObjectId(auction_id)})
+    
+    if auction is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Auction not found"
+        )
+    
+    # Verify ownership
+    if auction.get("host_id") != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own auctions"
+        )
+    
+    return schemas.AuctionOut(**auction)
+
+@router.put("/auctions/{auction_id}", response_model=schemas.AuctionOut)
+async def update_auction(
+    auction_id: str,
+    update_data: schemas.AuctionUpdate,
+    current_user: Annotated[schemas.UserOut, Depends(get_current_client_user)]
+):
+    """
+    Update an auction. Only scheduled auctions can be updated.
+    Only the auction host can update it.
+    """
+    # Validate ObjectId format
+    if not ObjectId.is_valid(auction_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid auction ID format"
+        )
+    
+    # Find auction
+    auction = await AuctionCollection.find_one({"_id": ObjectId(auction_id)})
+    
+    if auction is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Auction not found"
+        )
+    
+    # Verify ownership
+    if auction.get("host_id") != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only update your own auctions"
+        )
+    
+    # Only scheduled auctions can be updated
+    if auction.get("status") != AuctionStatus.SCHEDULED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Only scheduled auctions can be updated. Current status: {auction.get('status')}"
+        )
+    
+    # Prepare update data (only include non-None values)
+    update_dict = update_data.model_dump(exclude_unset=True)
+    
+    if not update_dict:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No update data provided"
+        )
+    
+    # Validate times if they are being updated
+    start_time = update_dict.get("start_time", auction.get("start_time"))
+    end_time = update_dict.get("end_time", auction.get("end_time"))
+    
+    if start_time >= end_time:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="End time must be after start time"
+        )
+    
+    # Check if start time is in the future (only if being updated)
+    if "start_time" in update_dict:
+        now_utc = datetime.now(timezone.utc)
+        if update_dict["start_time"] < now_utc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Start time must be in the future"
+            )
+    
+    # Update auction
+    result = await AuctionCollection.update_one(
+        {"_id": ObjectId(auction_id)},
+        {"$set": update_dict}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update auction"
+        )
+    
+    # Fetch updated auction
+    updated_auction = await AuctionCollection.find_one({"_id": ObjectId(auction_id)})
+    
+    return schemas.AuctionOut(**updated_auction)

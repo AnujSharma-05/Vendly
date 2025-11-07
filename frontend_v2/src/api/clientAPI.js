@@ -33,6 +33,34 @@ const clientAPI = {
     const response = await api.post("/client/auctions", auctionData);
     return response.data;
   },
+
+  /**
+   * Get a single auction by ID
+   * @param {string} auctionId - Auction ID
+   * @returns {Promise} Auction data
+   */
+  getAuction: async (auctionId) => {
+    const response = await api.get(`/client/auctions/${auctionId}`);
+    return response.data;
+  },
+
+  /**
+   * Update an auction
+   * @param {string} auctionId - Auction ID
+   * @param {Object} updateData - Data to update
+   * @returns {Promise} Updated auction
+   */
+  updateAuction: async (auctionId, updateData) => {
+    const response = await api.put(`/client/auctions/${auctionId}`, updateData);
+    return response.data;
+  },
 };
 
+export const {
+  getProfile,
+  getMyAuctions,
+  createAuction,
+  getAuction,
+  updateAuction,
+} = clientAPI;
 export default clientAPI;

@@ -5,9 +5,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import AuctionsPage from "./pages/AuctionsPage";
+import AuctionDetailsPage from "./pages/AuctionDetailsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import CreateAuction from "./pages/client/CreateAuction";
+import AddAuctionItems from "./pages/client/AddAuctionItems";
+import ManageAuction from "./pages/client/ManageAuction";
 
 function App() {
   return (
@@ -17,6 +21,8 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/auctions" element={<AuctionsPage />} />
+          <Route path="/auctions/:auctionId" element={<AuctionDetailsPage />} />
 
           {/* Admin Routes - Protected */}
           <Route
@@ -42,6 +48,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["client"]}>
                 <CreateAuction />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/auctions/:auctionId/items/add"
+            element={
+              <ProtectedRoute allowedRoles={["client"]}>
+                <AddAuctionItems />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/auctions/:auctionId/manage"
+            element={
+              <ProtectedRoute allowedRoles={["client"]}>
+                <ManageAuction />
               </ProtectedRoute>
             }
           />
