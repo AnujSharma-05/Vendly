@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import auth, users, admin, client, auction_items, auctions
+from .routers import auth, users, admin, client, auction_items, auctions, participant
 
 app = FastAPI(
 title = "VendlyAPI",
@@ -27,6 +27,7 @@ app.include_router(admin.router)
 app.include_router(client.router)
 app.include_router(auction_items.router)
 app.include_router(auctions.router)
+app.include_router(participant.router)
 
 @app.get("/")
 async def read_root():

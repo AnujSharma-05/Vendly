@@ -13,4 +13,6 @@ UserCollection = database.get_collection("users")
 ClientProfileCollection = database.get_collection("client_profiles")
 AuctionCollection = database.get_collection("auctions")
 AuctionItemCollection = database.get_collection("auction_items")
+ParticipantRegistrationCollection = database.get_collection("participant_registrations")
+BidCollection = database.get_collection("bids")
 # ... we will add more as we need them

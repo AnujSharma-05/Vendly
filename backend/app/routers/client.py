@@ -5,7 +5,13 @@ from datetime import datetime, timezone
 
 from .. import schemas
 from .auth import get_current_client_user
-from ..db.mongodb import AuctionCollection, ClientProfileCollection
+from ..db.mongodb import (
+    AuctionCollection, 
+    ClientProfileCollection, 
+    AuctionItemCollection,
+    ParticipantRegistrationCollection,
+    BidCollection
+)
 from ..core.enums import ClientProfileStatus, AuctionStatus
 
 
@@ -218,3 +224,67 @@ async def update_auction(
     updated_auction = await AuctionCollection.find_one({"_id": ObjectId(auction_id)})
     
     return schemas.AuctionOut(**updated_auction)
+
+
+@router.delete("/auctions/{auction_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_auction(
+    auction_id: str,
+    current_user: Annotated[schemas.UserOut, Depends(get_current_client_user)]
+):
+    """
+    Delete an auction. Only scheduled or finished auctions can be deleted.
+    Active auctions cannot be deleted to protect ongoing bidding.
+    Only the auction host can delete it.
+    Also deletes all associated items, registrations, and bids.
+    """
+    # Validate ObjectId format
+    if not ObjectId.is_valid(auction_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid auction ID format"
+        )
+    
+    # Find auction
+    auction = await AuctionCollection.find_one({"_id": ObjectId(auction_id)})
+    
+    if auction is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Auction not found"
+        )
+    
+    # Verify ownership
+    if auction.get("host_id") != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete your own auctions"
+        )
+    
+    # Only scheduled or finished auctions can be deleted
+    auction_status = auction.get("status")
+    if auction_status not in [AuctionStatus.SCHEDULED, AuctionStatus.FINISHED]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot delete {auction_status} auctions. Only scheduled or finished auctions can be deleted."
+        )
+    
+    # Delete associated data in order
+    # 1. Delete all bids for items in this auction
+    await BidCollection.delete_many({"auction_id": auction_id})
+    
+    # 2. Delete all participant registrations
+    await ParticipantRegistrationCollection.delete_many({"auction_id": auction_id})
+    
+    # 3. Delete all auction items
+    await AuctionItemCollection.delete_many({"auction_id": auction_id})
+    
+    # 4. Finally, delete the auction itself
+    delete_result = await AuctionCollection.delete_one({"_id": ObjectId(auction_id)})
+    
+    if delete_result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete auction"
+        )
+    
+    return None  # 204 No Content response

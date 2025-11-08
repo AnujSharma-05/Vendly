@@ -17,8 +17,10 @@ import {
   AlertCircle,
   CheckCircle,
   Timer,
+  Gavel,
 } from "lucide-react";
 import { getAuctionDetails, getAuctionItems } from "../api/publicAuctionsAPI";
+import { joinAuction, checkRegistrationStatus } from "../api/participantAPI";
 import { useAuth } from "../context/AuthContext";
 
 /**
@@ -29,17 +31,39 @@ import { useAuth } from "../context/AuthContext";
 const AuctionDetailsPage = () => {
   const { auctionId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
 
   // State
   const [auction, setAuction] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [joiningAuction, setJoiningAuction] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [hasJoined, setHasJoined] = useState(false);
 
   useEffect(() => {
     fetchAuctionData();
+
+    // Auto-refresh every 30 seconds to update status and items
+    const interval = setInterval(fetchAuctionData, 30000);
+    return () => clearInterval(interval);
   }, [auctionId]);
+
+  useEffect(() => {
+    // Fetch registration status when user is authenticated and is a participant
+    if (
+      !authLoading &&
+      isAuthenticated &&
+      user?.role === "participant" &&
+      auctionId
+    ) {
+      fetchRegistrationStatus();
+    } else if (!isAuthenticated) {
+      // Reset joined status if not authenticated
+      setHasJoined(false);
+    }
+  }, [authLoading, isAuthenticated, user, auctionId]);
 
   const fetchAuctionData = async () => {
     try {
@@ -61,16 +85,71 @@ const AuctionDetailsPage = () => {
     }
   };
 
-  const handleJoinAuction = () => {
+  const fetchRegistrationStatus = async () => {
+    try {
+      const result = await checkRegistrationStatus(auctionId);
+      setHasJoined(result.is_registered);
+    } catch (err) {
+      // If error (e.g., not authenticated), assume not joined
+      console.error("Failed to check registration status:", err);
+      setHasJoined(false);
+    }
+  };
+
+  const handleJoinAuction = async () => {
+    // Check if user is authenticated
     if (!isAuthenticated) {
       // Redirect to login with return URL
       navigate(`/login?redirect=/auctions/${auctionId}`);
       return;
     }
 
-    // TODO: Implement join auction logic
-    console.log("Joining auction:", auctionId);
-    alert("Join auction functionality will be implemented next!");
+    // Check if user is a participant
+    if (user?.role !== "participant") {
+      alert(
+        "Only participants can join auctions. Please register as a participant."
+      );
+      return;
+    }
+
+    // Only allow joining scheduled or live auctions
+    if (auction.status !== "scheduled" && auction.status !== "active") {
+      alert("You can only join upcoming or live auctions");
+      return;
+    }
+
+    try {
+      setJoiningAuction(true);
+      setError("");
+      setSuccessMessage("");
+
+      await joinAuction(auctionId);
+
+      // Mark as joined
+      setHasJoined(true);
+
+      setSuccessMessage(
+        auction.status === "scheduled"
+          ? "Successfully registered for the auction! Redirecting to your dashboard..."
+          : "Successfully joined the live auction! Redirecting to your dashboard..."
+      );
+
+      // Redirect to participant dashboard after 2 seconds
+      setTimeout(() => {
+        navigate("/participant/dashboard");
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to join auction:", err);
+      const errorMessage =
+        err.response?.data?.detail ||
+        "Failed to join auction. Please try again.";
+      setError(errorMessage);
+
+      // Clear error after 5 seconds
+      setTimeout(() => setError(""), 5000);
+    } finally {
+      setJoiningAuction(false);
+    }
   };
 
   const getTimeRemaining = () => {
@@ -100,7 +179,15 @@ const AuctionDetailsPage = () => {
       return { label: `${minutes}m remaining`, expired: false };
     } else if (auction.status === "scheduled") {
       const diff = start - now;
-      if (diff <= 0) return { label: "Starting soon", expired: false };
+
+      // If scheduled auction time has passed, it should be active (backend might not have updated yet)
+      if (diff <= 0) {
+        return {
+          label: "Auction should be starting",
+          expired: false,
+          shouldBeActive: true,
+        };
+      }
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor(
@@ -214,6 +301,8 @@ const AuctionDetailsPage = () => {
                         className={`text-sm font-medium ${
                           timeRemaining.expired
                             ? "text-red-600"
+                            : timeRemaining.shouldBeActive
+                            ? "text-orange-600"
                             : "text-gray-700"
                         }`}
                       >
@@ -228,6 +317,26 @@ const AuctionDetailsPage = () => {
                   <p className="text-gray-600 text-lg leading-relaxed">
                     {auction.description}
                   </p>
+
+                  {/* Warning if scheduled time has passed */}
+                  {auction.status === "scheduled" &&
+                    timeRemaining?.shouldBeActive && (
+                      <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3">
+                        <div className="flex items-start">
+                          <AlertCircle className="w-5 h-5 text-orange-600 mr-2 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-orange-800 font-medium">
+                              Auction start time has passed
+                            </p>
+                            <p className="text-xs text-orange-700 mt-1">
+                              The auction should be active now. The page will
+                              auto-refresh every 30 seconds to update the
+                              status.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
@@ -285,12 +394,12 @@ const AuctionDetailsPage = () => {
                         </p>
                       )}
 
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex-1">
                           <span className="text-sm text-gray-500 block">
                             Base Price
                           </span>
-                          <span className="text-lg font-bold text-green-600">
+                          <span className="text-lg font-bold text-gray-900">
                             ${item.base_price.toFixed(2)}
                           </span>
                         </div>
@@ -298,6 +407,27 @@ const AuctionDetailsPage = () => {
                           <Badge variant="default">{item.category}</Badge>
                         )}
                       </div>
+
+                      {item.current_bid && (
+                        <div className="mb-3 pb-3 border-b border-gray-200">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-gray-500">
+                              Last Bid
+                            </span>
+                            <span className="text-lg font-bold text-green-600">
+                              ${item.current_bid.toFixed(2)}
+                            </span>
+                          </div>
+                          {item.bid_count > 0 && (
+                            <div className="flex items-center justify-end mt-1">
+                              <span className="text-xs text-gray-500">
+                                {item.bid_count}{" "}
+                                {item.bid_count === 1 ? "bid" : "bids"} placed
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {item.status && (
                         <div className="mt-3 pt-3 border-t border-gray-200">
@@ -324,6 +454,38 @@ const AuctionDetailsPage = () => {
 
           {/* Sidebar - Right Side */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Success Message */}
+            {successMessage && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-600 mr-3 shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-green-800">
+                      Success
+                    </h3>
+                    <p className="text-sm text-green-700 mt-1">
+                      {successMessage}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 text-red-600 mr-3 shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-red-800">
+                      Error
+                    </h3>
+                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Join Card */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
               <h3 className="text-xl font-bold text-gray-900 mb-4">
@@ -407,16 +569,52 @@ const AuctionDetailsPage = () => {
               <div className="space-y-3">
                 {canJoin() ? (
                   <>
-                    <Button
-                      onClick={handleJoinAuction}
-                      className="w-full"
-                      disabled={!canJoin()}
-                      variant="secondary"
-                    >
-                      {auction.status === "active"
-                        ? "Join Now"
-                        : "Register to Join"}
-                    </Button>
+                    {hasJoined ? (
+                      <>
+                        <Button variant="success" className="w-full" disabled>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Registered
+                        </Button>
+                        {auction.status === "active" && (
+                          <Button
+                            variant="secondary"
+                            className="w-full"
+                            onClick={() =>
+                              navigate(
+                                `/participant/auctions/${auctionId}/live`
+                              )
+                            }
+                          >
+                            <Gavel className="w-4 h-4 mr-2" />
+                            Start Bidding
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <Button
+                        onClick={handleJoinAuction}
+                        className="w-full"
+                        disabled={joiningAuction}
+                        variant={
+                          auction.status === "active" ? "primary" : "secondary"
+                        }
+                      >
+                        {joiningAuction ? (
+                          <>
+                            <Timer className="w-4 h-4 mr-2 animate-spin" />
+                            {auction.status === "active"
+                              ? "Joining..."
+                              : "Registering..."}
+                          </>
+                        ) : (
+                          <>
+                            {auction.status === "active"
+                              ? "Join Now"
+                              : "Register to Join"}
+                          </>
+                        )}
+                      </Button>
+                    )}
                     {!isAuthenticated && (
                       <p className="text-xs text-gray-500 text-center">
                         You need to be logged in to join this auction

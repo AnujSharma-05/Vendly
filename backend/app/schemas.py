@@ -169,3 +169,49 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Schema for the data encoded within a JWT (the token's "payload")."""
     email: Optional[str] = None # We are using the email as the token's subject ("sub").
+
+
+# ====================================================================
+#                  PARTICIPANT SCHEMAS
+# ====================================================================
+
+class ParticipantRegistrationCreate(BaseModel):
+    """Schema for participant to join/register for an auction."""
+    # auction_id comes from URL path parameter
+    pass  # No additional fields needed, user_id comes from auth
+
+class ParticipantRegistrationOut(MongoBaseModel):
+    """Schema for representing a participant's registration in an auction."""
+    auction_id: PyObjectId  # Which auction they joined
+    user_id: PyObjectId  # Which user (participant)
+    joined_at: datetime  # When they registered
+    status: str = "active"  # active, left, kicked
+    total_spent: float = 0.0  # How much they've spent in this auction
+    items_won: int = 0  # Number of items won
+
+class BidCreate(BaseModel):
+    """Schema for placing a bid on an item."""
+    amount: float = Field(..., gt=0, description="Bid amount (must be greater than 0)")
+
+class BidOut(MongoBaseModel):
+    """Schema for representing a bid in API responses."""
+    auction_id: PyObjectId
+    item_id: PyObjectId
+    user_id: PyObjectId  # Who placed the bid
+    amount: float
+    placed_at: datetime
+    is_winning: bool = False  # Is this currently the winning bid?
+
+class ParticipantStatsOut(BaseModel):
+    """Schema for participant dashboard statistics."""
+    active_auctions: int  # Number of auctions currently participating in
+    won_items: int  # Total items won across all auctions
+    total_spent: float  # Total money spent
+    active_bids: int  # Number of active bids
+
+class ParticipantAuctionOut(AuctionOut):
+    """Schema for auction in participant view with additional participant-specific data."""
+    my_bids_count: int = 0  # How many bids placed in this auction
+    my_won_items: int = 0  # How many items won in this auction
+    my_spent: float = 0.0  # How much spent in this auction
+    my_remaining_budget: float = 0.0  # Remaining budget in this auction

@@ -1,9 +1,11 @@
-import React from "react";
-import { ArrowRight, Zap, Shield, Eye, Clock } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Zap, Shield, Eye, Clock, TrendingUp } from "lucide-react";
 import Navbar from "../components/layouts/Navbar";
 import Footer from "../components/layouts/Footer";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
+import { getAuctions } from "../api/publicAuctionsAPI";
 
 /**
  * Home Page - Landing page with hero, features, and auction showcase
@@ -11,40 +13,32 @@ import Badge from "../components/ui/Badge";
  * Sections:
  * 1. Hero Section - Main headline + CTA
  * 2. Features - 3 key platform benefits
- * 3. Live Auctions - Placeholder cards (API integration later)
+ * 3. Live Auctions - Real auction data from API
  * 4. How It Works - 4-step process
  * 5. CTA Section - Final call to action
  */
 const HomePage = () => {
-  // Placeholder auction data (will be replaced with API call)
-  const mockAuctions = [
-    {
-      id: 1,
-      title: "Vintage Camera Collection",
-      host: "PhotoPro",
-      status: "live",
-      participants: "24/50",
-      image:
-        "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400",
-    },
-    {
-      id: 2,
-      title: "Rare Comic Books Bundle",
-      host: "ComicVault",
-      status: "scheduled",
-      participants: "12/30",
-      image:
-        "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?w=400",
-    },
-    {
-      id: 3,
-      title: "Antique Furniture Set",
-      host: "VintageHomes",
-      status: "live",
-      participants: "18/40",
-      image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400",
-    },
-  ];
+  const navigate = useNavigate();
+  const [liveAuctions, setLiveAuctions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLiveAuctions();
+  }, []);
+
+  const fetchLiveAuctions = async () => {
+    try {
+      setLoading(true);
+      // Fetch active auctions, limit to 6 for homepage
+      const auctions = await getAuctions({ status: "active", limit: 6 });
+      setLiveAuctions(auctions);
+    } catch (err) {
+      console.error("Failed to fetch live auctions:", err);
+      setLiveAuctions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -64,7 +58,11 @@ const HomePage = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up">
             <a href="#auctions">
-              <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full sm:w-auto"
+              >
                 Explore Live Auctions
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
@@ -141,63 +139,77 @@ const HomePage = () => {
             <h2 className="text-3xl font-bold text-gray-900">
               🔴 Live Auctions Now
             </h2>
-            <a href="/auctions">
-              <Button variant="ghost">
-                View All
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </a>
+            <Button variant="ghost" onClick={() => navigate("/auctions")}>
+              View All
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockAuctions.map((auction) => (
-              <div
-                key={auction.id}
-                className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={auction.image}
-                    alt={auction.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-3 right-3">
-                    <Badge
-                      variant={auction.status === "live" ? "error" : "warning"}
-                    >
-                      {auction.status === "live" ? "🔴 LIVE" : "🟡 SCHEDULED"}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
-                    {auction.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Host: <span className="font-medium">{auction.host}</span>
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {auction.participants}
-                    </div>
-                    <Button size="sm" variant="ghost">
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Empty State (show when no auctions) */}
-          {mockAuctions.length === 0 && (
+          {loading ? (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg mb-4">
-                No live auctions right now. Check back soon!
-              </p>
-              <Button variant="secondary">Browse Scheduled Auctions</Button>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading live auctions...</p>
+            </div>
+          ) : liveAuctions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {liveAuctions.map((auction) => (
+                <div
+                  key={auction._id}
+                  onClick={() => navigate(`/auctions/${auction._id}`)}
+                  className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div className="relative h-48 bg-gradient-to-br from-primary-100 via-blue-100 to-purple-100 flex items-center justify-center">
+                    <div className="text-center p-6">
+                      <TrendingUp className="w-16 h-16 text-primary-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 font-medium">
+                        Live Auction
+                      </p>
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <Badge variant="error">🔴 LIVE</Badge>
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
+                      {auction.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      {auction.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Clock className="w-4 h-4 mr-1" />
+                        {new Date(auction.end_time).toLocaleDateString()}
+                      </div>
+                      <Button size="sm" variant="ghost">
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Empty State */
+            <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+              <div className="max-w-md mx-auto">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No Live Auctions Right Now
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Check back soon or browse scheduled auctions!
+                </p>
+                <Button
+                  variant="secondary"
+                  onClick={() => navigate("/auctions")}
+                >
+                  Browse All Auctions
+                </Button>
+              </div>
             </div>
           )}
         </div>

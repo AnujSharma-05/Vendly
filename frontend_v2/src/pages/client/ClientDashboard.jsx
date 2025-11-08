@@ -13,6 +13,7 @@ import {
   Package,
   AlertCircle,
   Loader2,
+  Trash2,
 } from "lucide-react";
 
 /**
@@ -31,6 +32,8 @@ const ClientDashboard = () => {
   const [auctions, setAuctions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { auctionId, title }
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchClientProfile();
@@ -75,6 +78,38 @@ const ClientDashboard = () => {
 
   const handleCreateAuction = () => {
     navigate("/client/create-auction");
+  };
+
+  const handleDeleteAuction = async () => {
+    if (!deleteConfirm) return;
+
+    try {
+      setIsDeleting(true);
+      setError("");
+
+      await clientAPI.deleteAuction(deleteConfirm.auctionId);
+
+      // Remove auction from local state
+      setAuctions((prev) =>
+        prev.filter((a) => a._id !== deleteConfirm.auctionId)
+      );
+
+      // Close confirmation modal
+      setDeleteConfirm(null);
+    } catch (err) {
+      console.error("Failed to delete auction:", err);
+      const errorMessage =
+        err.response?.data?.detail ||
+        "Failed to delete auction. Please try again.";
+      setError(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const canDeleteAuction = (status) => {
+    // Can only delete scheduled or finished auctions
+    return status === "scheduled" || status === "finished";
   };
 
   // Render different content based on profile status
@@ -301,6 +336,21 @@ const ClientDashboard = () => {
                             >
                               Manage
                             </Button>
+                            {canDeleteAuction(auction.status) && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() =>
+                                  setDeleteConfirm({
+                                    auctionId: auction._id,
+                                    title: auction.title,
+                                  })
+                                }
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -380,6 +430,56 @@ const ClientDashboard = () => {
           renderStatusContent()
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-start mb-4">
+              <div className="flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Delete Auction
+                </h3>
+                <p className="mt-2 text-sm text-gray-600">
+                  Are you sure you want to delete "{deleteConfirm.title}"? This
+                  action will also delete all associated items, registrations,
+                  and bids. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6">
+              <Button
+                variant="secondary"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteAuction}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Auction
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -8,11 +8,16 @@ import api from "./axios";
 const publicAuctionsAPI = {
   /**
    * Get all public auctions
-   * @param {string} status - Optional filter by status (scheduled, active, finished)
+   * @param {Object} filters - Optional filters object
+   * @param {string} filters.status - Filter by status (scheduled, active, finished)
+   * @param {number} filters.limit - Limit number of results
    * @returns {Promise} Array of auctions
    */
-  getAuctions: async (status = null) => {
-    const params = status ? { status } : {};
+  getAuctions: async (filters = {}) => {
+    const params = {};
+    if (filters.status) params.status = filters.status;
+    if (filters.limit) params.limit = filters.limit;
+
     const response = await api.get("/auctions", { params });
     return response.data;
   },

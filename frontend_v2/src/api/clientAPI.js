@@ -54,6 +54,16 @@ const clientAPI = {
     const response = await api.put(`/client/auctions/${auctionId}`, updateData);
     return response.data;
   },
+
+  /**
+   * Delete an auction (only scheduled or finished auctions)
+   * @param {string} auctionId - Auction ID
+   * @returns {Promise} void
+   */
+  deleteAuction: async (auctionId) => {
+    const response = await api.delete(`/client/auctions/${auctionId}`);
+    return response.data;
+  },
 };
 
 export const {
@@ -62,5 +72,6 @@ export const {
   createAuction,
   getAuction,
   updateAuction,
+  deleteAuction,
 } = clientAPI;
 export default clientAPI;

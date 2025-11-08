@@ -55,7 +55,7 @@ const LoginPage = () => {
         const roleRedirects = {
           admin: "/admin/dashboard",
           client: "/client/dashboard",
-          participant: "/dashboard",
+          participant: "/participant/dashboard",
         };
         navigate(roleRedirects[result.user.role] || "/");
       } else {

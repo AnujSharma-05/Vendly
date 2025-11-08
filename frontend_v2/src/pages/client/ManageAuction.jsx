@@ -603,7 +603,7 @@ const ManageAuction = () => {
 
                 {canEdit && (
                   <div className="flex justify-end">
-                    <Button type="submit" disabled={saving}>
+                    <Button type="submit" variant="secondary" disabled={saving}>
                       <Save className="w-4 h-4 mr-2" />
                       {saving ? "Saving..." : "Save Changes"}
                     </Button>

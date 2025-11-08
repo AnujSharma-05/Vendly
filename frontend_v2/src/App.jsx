@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import HomePage from "./pages/HomePage";
+import HowItWorksPage from "./pages/HowItWorksPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AuctionsPage from "./pages/AuctionsPage";
@@ -12,6 +13,8 @@ import ClientDashboard from "./pages/client/ClientDashboard";
 import CreateAuction from "./pages/client/CreateAuction";
 import AddAuctionItems from "./pages/client/AddAuctionItems";
 import ManageAuction from "./pages/client/ManageAuction";
+import ParticipantDashboard from "./pages/participant/ParticipantDashboard";
+import LiveAuctionPage from "./pages/participant/LiveAuctionPage";
 
 function App() {
   return (
@@ -19,6 +22,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auctions" element={<AuctionsPage />} />
@@ -64,6 +68,24 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["client"]}>
                 <ManageAuction />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Participant Routes - Protected */}
+          <Route
+            path="/participant/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["participant"]}>
+                <ParticipantDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/participant/auctions/:auctionId/live"
+            element={
+              <ProtectedRoute allowedRoles={["participant"]}>
+                <LiveAuctionPage />
               </ProtectedRoute>
             }
           />
