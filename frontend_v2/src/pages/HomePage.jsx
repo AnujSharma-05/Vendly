@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Zap, Shield, Eye, Clock, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  Zap,
+  Shield,
+  Eye,
+  Clock,
+  TrendingUp,
+  Star,
+  MessageSquare,
+} from "lucide-react";
 import Navbar from "../components/layouts/Navbar";
 import Footer from "../components/layouts/Footer";
 import Button from "../components/ui/Button";
@@ -278,34 +287,89 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 px-4 bg-primary-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className="text-lg text-primary-100 mb-8">
-            Join thousands of users already bidding and hosting on Vendly.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/register">
+      {/* Feedback & Reviews Section */}
+      <section className="py-16 px-4 bg-linear-to-br from-primary-50 via-blue-50 to-purple-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              We Value Your Feedback
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Help us improve Vendly! Share your experience, suggestions, or
+              report issues. Your feedback shapes our platform.
+            </p>
+          </div>
+
+          {/* Feedback Cards */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {/* User Reviews */}
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                <Star className="w-6 h-6 text-yellow-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                User Reviews
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Share your experience with the platform and help others make
+                informed decisions.
+              </p>
+              <div className="flex items-center text-sm text-gray-500">
+                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 mr-1" />
+                <span>Rate your experience</span>
+              </div>
+            </div>
+
+            {/* Feature Requests */}
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <MessageSquare className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Feature Requests
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Have an idea to make Vendly better? We'd love to hear your
+                suggestions!
+              </p>
+              <div className="flex items-center text-sm text-gray-500">
+                <MessageSquare className="w-4 h-4 text-blue-500 mr-1" />
+                <span>Suggest improvements</span>
+              </div>
+            </div>
+
+            {/* Bug Reports */}
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Report Issues
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Encountered a problem? Let us know so we can fix it quickly.
+              </p>
+              <div className="flex items-center text-sm text-gray-500">
+                <Shield className="w-4 h-4 text-red-500 mr-1" />
+                <span>Help us improve</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA Button */}
+          <div className="text-center">
+            <a href="http://localhost:8080/Vendly/feedback_form.jsp" target="_blank" rel="noopener noreferrer">
               <Button
-                size="lg"
                 variant="secondary"
-                className="w-full sm:w-auto"
+                size="lg"
               >
-                Create Account
+                Submit Feedback
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </a>
-            <a href="/auctions">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="w-full sm:w-auto"
-              >
-                Browse Auctions
-              </Button>
-            </a>
+            <p className="text-sm text-gray-500 mt-4">
+              Your feedback helps us serve you better
+            </p>
           </div>
         </div>
       </section>

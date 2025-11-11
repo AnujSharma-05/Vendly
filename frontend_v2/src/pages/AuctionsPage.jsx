@@ -485,6 +485,7 @@ const AuctionsPage = () => {
                         <>
                           {auction.status === "active" && (
                             <Button
+                              variant="secondary"
                               size="sm"
                               onClick={() =>
                                 handleJoinAuction(auction._id, auction.status)
